@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"net"
 	"os"
@@ -21,13 +20,15 @@ func main() {
 		panic(err)
 	}
 
-	cmd := &RedisCmd{}
+	fmt.Println("======Welcome to spirit-moon test-tools redis-cli(golang)======")
+
+	cmd := &RedisCmd{
+		Num_to_str: num_to_str,
+	}
 	buffer := bufio.NewReader(os.Stdin)
 
 
-	rdata := make([]byte, 5) //处理粘包问题，buf刻意设置很小
-	rbuf := bytes.NewBuffer(nil)
-
+	buf := make([]byte, 5) //处理粘包问题，buf刻意设置很小
 	for {
 		fmt.Printf("%s> ", host_addr)
 
@@ -47,13 +48,14 @@ func main() {
 			continue
 		}
 
+		req_cmd := arr[0]
 		cmd.Clear()
 		args := []interface{}{}
 		for _, arg_str := range arr[1:] {
 			args = append(args, arg_str)
 		}
 
-		cmd_str, err := cmd.Encode(arr[0], args...)
+		cmd_str, err := cmd.Encode(req_cmd, args...)
 		if err != nil {
 			fmt.Println("cli_encode_err:", err)
 			continue
@@ -68,33 +70,17 @@ func main() {
 			panic(err)
 		}
 
-		var cmd_data []byte
-		rcount := 0
-		for {
-			rcount++
-			n, err := conn.Read(rdata)
-			if err != nil {
-				panic(err)
-			}
-
-			rbuf.Write(rdata[:n])
-			cmd_data = rbuf.Bytes()
-			_, n, err = cmd.genCmd(string(cmd_data))
-			if err == nil {
-				cmd_data = cmd_data[:n]
-				rbuf.Reset()
-				rbuf.Write(cmd_data[n:])
-				break
-			}
+		resp_data, rcount, err := cmd.Read(conn,buf)
+		if err != nil {
+			panic(err)
 		}
 
-		resp_data := string(cmd_data)
 		if show_cmd {
-			fmt.Printf("RECV: %s\n--------------\n", strings.ReplaceAll(resp_data, "\r\n", "\\r\\n"))
+			fmt.Printf("RECV(%d): %s\n--------------\n", rcount, strings.ReplaceAll(string(resp_data), "\r\n", "\\r\\n"))
 		}
 
 		cmd.Clear()
-		_, err = cmd.Decode(resp_data)
+		_, err = cmd.Decode(string(resp_data))
 		if err != nil {
 			fmt.Println("cli_decode_err:", err)
 			continue
@@ -102,15 +88,31 @@ func main() {
 
 		cmd.Cmd.ShowCommand("")
 
-		if cmd_info == "monitor" {
+		req_cmd = strings.ToLower(req_cmd)
+		if req_cmd == "monitor" { //原始转发数据
 			for {
-				n, err := conn.Read(rdata)
+				n, err := conn.Read(buf)
 				if err != nil {
 					panic(err)
 				}
 
-				resp_data := string(rdata[:n])
+				resp_data := string(buf[:n])
 				fmt.Println(string(resp_data))
+			}
+		} else if req_cmd == "subscribe" { //订阅
+			for {
+				resp_data, rcount, err = cmd.Read(conn, buf)
+				if err != nil {
+					panic(err)
+				}
+
+				cmd.Clear()
+				_, err = cmd.Decode(string(resp_data))
+				if err != nil {
+					panic(err)
+				}
+
+				cmd.Cmd.ShowCommand("")
 			}
 		}
 	}

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"reflect"
 	"strconv"
 	"strings"
@@ -80,6 +82,7 @@ func (this *RedisCmdItem) ShowCommand(prefix string) {
 type RedisCmd struct {
 	Raw		string
 	Cmd		*RedisCmdItem
+	Num_to_str bool
 }
 
 func (this *RedisCmd) Clear() {
@@ -137,7 +140,7 @@ func (this *RedisCmd) Encode(cmd string, args ...interface{}) (string, error) {
 		case reflect.Float32, reflect.Float64:
 		case reflect.Uint64, reflect.Uint32, reflect.Uint16, reflect.Uint8, reflect.Uint,
 			reflect.Int64, reflect.Int32, reflect.Int16, reflect.Int8, reflect.Int: //其实都可以转成字符串
-			if !num_to_str {
+			if !this.Num_to_str {
 				citem.Status = ":"
 				citem.Value = str_arg
 				add_arg = false
@@ -222,6 +225,28 @@ func (this *RedisCmd) genCmd(cmd_str string) (cmds []*RedisCmdItem, offset int, 
 	default:
 		err = fmt.Errorf("invalid format status:%v", cmd_str[0])
 		return
+	}
+
+	return
+}
+
+func (this *RedisCmd) Read(c io.Reader, buf []byte) (resp_data []byte, rcount int, err error) {
+	rbuf := bytes.NewBuffer(nil)
+	var n int
+	for {
+		rcount++
+		n, err = c.Read(buf)
+		if err != nil {
+			return
+		}
+
+		rbuf.Write(buf[:n])
+		resp_data = rbuf.Bytes()
+		_, n, err = this.genCmd(string(resp_data))
+		if err == nil {
+			resp_data = resp_data[:n]
+			break
+		}
 	}
 
 	return
