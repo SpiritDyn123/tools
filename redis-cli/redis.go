@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"github.com/pkg/errors"
 	"io"
 	"reflect"
 	"strconv"
@@ -163,6 +164,10 @@ func (this *RedisCmd) Encode(cmd string, args ...interface{}) (string, error) {
 	return this.Raw, nil
 }
 
+var (
+	ERROR_CMD = errors.New("invalid cmd")
+)
+
 func (this *RedisCmd) genCmd(cmd_str string) (cmds []*RedisCmdItem, offset int, err error) {
 	sp_index := strings.Index(cmd_str, "\r\n")
 	if sp_index <= 0 {
@@ -181,10 +186,15 @@ func (this *RedisCmd) genCmd(cmd_str string) (cmds []*RedisCmdItem, offset int, 
 	switch(cmd_str[0]) {
 	case '+', '-': //操作成功或失败的描述
 	case ':': //整数
+		// 数字检查
+		_, err = strconv.Atoi(cmd.Value)
+		if err != nil {
+			return nil, 0, ERROR_CMD
+		}
 	case '*': //数组
 		args_len, gerr := strconv.Atoi(cmd.Value)
 		if gerr != nil {
-			return nil, 0, gerr
+			return nil, 0, ERROR_CMD
 		}
 
 		for args_len > 0 {
@@ -209,7 +219,7 @@ func (this *RedisCmd) genCmd(cmd_str string) (cmds []*RedisCmdItem, offset int, 
 
 		str_len, gerr := strconv.Atoi(cmd.Value)
 		if gerr != nil {
-			return nil, 0, gerr
+			return nil, 0, ERROR_CMD
 		}
 
 		if offset + str_len >= cstr_len {
@@ -223,28 +233,28 @@ func (this *RedisCmd) genCmd(cmd_str string) (cmds []*RedisCmdItem, offset int, 
 		})
 		offset += str_len + 2
 	default:
-		err = fmt.Errorf("invalid format status:%v", cmd_str[0])
+		//err = fmt.Errorf("invalid format status:%v", cmd_str[0])
+		err = ERROR_CMD
 		return
 	}
 
 	return
 }
 
-func (this *RedisCmd) Read(c io.Reader, buf []byte) (resp_data []byte, rcount int, err error) {
-	rbuf := bytes.NewBuffer(nil)
-	var n int
+func (this *RedisCmd) Read(c io.Reader, buf *bytes.Buffer) (n int, rcount int, err error) {
+	//刻意测试粘包问题
+	rdata := make([]byte, 5)
 	for {
 		rcount++
-		n, err = c.Read(buf)
+		n, err = c.Read(rdata)
 		if err != nil {
 			return
 		}
 
-		rbuf.Write(buf[:n])
-		resp_data = rbuf.Bytes()
+		buf.Write(rdata[:n])
+		resp_data := buf.Bytes()
 		_, n, err = this.genCmd(string(resp_data))
-		if err == nil {
-			resp_data = resp_data[:n]
+		if err == nil || err == ERROR_CMD {
 			break
 		}
 	}

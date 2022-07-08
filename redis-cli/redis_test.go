@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -38,4 +39,29 @@ func TestRedisCmd_Decode(t *testing.T) {
 
 	jsdata, _ := json.Marshal(cmd)
 	t.Logf("decode cmd to JSON:%s", string(jsdata))
+}
+
+//go test -v redis_test.go redis.go -run=Read
+func TestRedisCmd_Read(t *testing.T) {
+	test_cmd_str := "*4\r\n$5\r\nHMGET\r\n$5\r\nthash\r\n$2\r\nk1\r\n$2\r\nk2\r\n"
+	src_buf := bytes.NewBuffer(nil)
+	write_cnt := 3
+	for i := 0;i < write_cnt;i++ { //多次放在一起粘包
+		src_buf.Write([]byte(test_cmd_str))
+	}
+
+	dst_buf := bytes.NewBuffer(nil)
+	cmd := &RedisCmd{}
+	for write_cnt > 0 {
+		n, rc, err := cmd.Read(src_buf, dst_buf)
+		if err != nil {
+			t.Errorf("read err:%v\n", err)
+			return
+		}
+		rdata := make([]byte, n)
+		dst_buf.Read(rdata)
+		write_cnt--
+		t.Logf("%d、=====data_len:%d====readcount:%d====%s\n", 3-write_cnt, n, rc,
+			strings.ReplaceAll(string(rdata), "\r\n", "\\r\\n"))
+	}
 }

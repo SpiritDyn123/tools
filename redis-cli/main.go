@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"net"
 	"os"
@@ -19,6 +20,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	defer conn.Close()
 
 	fmt.Println("======Welcome to spirit-moon test-tools redis-cli(golang)======")
 
@@ -28,7 +30,7 @@ func main() {
 	buffer := bufio.NewReader(os.Stdin)
 
 
-	buf := make([]byte, 5) //处理粘包问题，buf刻意设置很小
+	buf := bytes.NewBuffer(nil)
 	for {
 		fmt.Printf("%s> ", host_addr)
 
@@ -49,6 +51,10 @@ func main() {
 		}
 
 		req_cmd := arr[0]
+		if req_cmd == "exit" {
+			break
+		}
+
 		cmd.Clear()
 		args := []interface{}{}
 		for _, arg_str := range arr[1:] {
@@ -70,11 +76,13 @@ func main() {
 			panic(err)
 		}
 
-		resp_data, rcount, err := cmd.Read(conn,buf)
+		data_len, rcount, err := cmd.Read(conn, buf)
 		if err != nil {
 			panic(err)
 		}
 
+		resp_data := make([]byte, data_len)
+		buf.Read(resp_data)
 		if show_cmd {
 			fmt.Printf("RECV(%d): %s\n--------------\n", rcount, strings.ReplaceAll(string(resp_data), "\r\n", "\\r\\n"))
 		}
@@ -89,22 +97,27 @@ func main() {
 		cmd.Cmd.ShowCommand("")
 
 		req_cmd = strings.ToLower(req_cmd)
-		if req_cmd == "monitor" { //原始转发数据
+		if req_cmd == "quit" {
+			break
+		}else if req_cmd == "monitor" { //原始转发数据
+			rdata := make([]byte, 1024)
 			for {
-				n, err := conn.Read(buf)
+				n, err := conn.Read(rdata)
 				if err != nil {
 					panic(err)
 				}
 
-				resp_data := string(buf[:n])
-				fmt.Println(string(resp_data))
+				resp_data := string(rdata[:n])
+				fmt.Printf(string(resp_data))
 			}
 		} else if req_cmd == "subscribe" { //订阅
 			for {
-				resp_data, rcount, err = cmd.Read(conn, buf)
+				data_len, rcount, err = cmd.Read(conn, buf)
 				if err != nil {
 					panic(err)
 				}
+				resp_data := make([]byte, data_len)
+				buf.Read(resp_data)
 
 				cmd.Clear()
 				_, err = cmd.Decode(string(resp_data))
