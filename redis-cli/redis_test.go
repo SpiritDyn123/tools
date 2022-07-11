@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"strings"
 	"testing"
 )
 
@@ -19,7 +18,7 @@ func TestRedisCmd_Encode(t *testing.T) {
 	}
 
 	//输出 *4\r\n$5\r\nHMGET\r\n$5\r\nthash\r\n$2\r\nk1\r\n$2\r\nk2\r\n
-	t.Logf("send cmd: %s\n", strings.ReplaceAll(req_data, "\r\n", "\\r\\n"))
+	t.Logf("send cmd: %s\n", RedisStr([]byte(req_data)))
 }
 
 //go test -v redis_test.go redis.go -run=Decode
@@ -62,6 +61,6 @@ func TestRedisCmd_Read(t *testing.T) {
 		dst_buf.Read(rdata)
 		write_cnt--
 		t.Logf("%d、=====data_len:%d====readcount:%d====%s\n", 3-write_cnt, n, rc,
-			strings.ReplaceAll(string(rdata), "\r\n", "\\r\\n"))
+			RedisStr(rdata))
 	}
 }

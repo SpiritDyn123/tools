@@ -68,7 +68,7 @@ func main() {
 		}
 
 		if show_cmd {
-			fmt.Printf("SEND: %s\n--------------\n", strings.ReplaceAll(cmd_str, "\r\n", "\\r\\n"))
+			fmt.Printf("SEND: %s\n--------------\n",  RedisStr([]byte(cmd_str)))
 		}
 
 		_, err = conn.Write([]byte(cmd_str))
@@ -84,7 +84,7 @@ func main() {
 		resp_data := make([]byte, data_len)
 		buf.Read(resp_data)
 		if show_cmd {
-			fmt.Printf("RECV(%d): %s\n--------------\n", rcount, strings.ReplaceAll(string(resp_data), "\r\n", "\\r\\n"))
+			fmt.Printf("RECV(%d): %s\n--------------\n", rcount, RedisStr(resp_data))
 		}
 
 		cmd.Clear()

@@ -19,6 +19,11 @@ import (
 	5）大字符串类型 Bulk Strings, 以 "$"美元符号开头，长度限制512M
 	6）数组类型 Arrays，以 "*"星号开头
 */
+
+func RedisStr(cmd_data []byte) string {
+	return strings.ReplaceAll(string(cmd_data), "\r\n", "\\r\\n")
+}
+
 type RedisCmdItem struct {
 	Empty    bool
 	Status  string "+,-,*,:,$"
@@ -169,6 +174,7 @@ var (
 )
 
 func (this *RedisCmd) genCmd(cmd_str string) (cmds []*RedisCmdItem, offset int, err error) {
+	//必须\r\n分隔符
 	sp_index := strings.Index(cmd_str, "\r\n")
 	if sp_index <= 0 {
 		err = fmt.Errorf("invalid format split index")
@@ -198,7 +204,7 @@ func (this *RedisCmd) genCmd(cmd_str string) (cmds []*RedisCmdItem, offset int, 
 		}
 
 		for args_len > 0 {
-			if offset >= cstr_len {
+			if offset > cstr_len {
 				err = fmt.Errorf("invalid format *(array) len")
 				return
 			}
@@ -218,11 +224,15 @@ func (this *RedisCmd) genCmd(cmd_str string) (cmds []*RedisCmdItem, offset int, 
 		}
 
 		str_len, gerr := strconv.Atoi(cmd.Value)
-		if gerr != nil {
+		if gerr != nil || str_len < 0 {
 			return nil, 0, ERROR_CMD
 		}
 
-		if offset + str_len >= cstr_len {
+		if str_len == 0 {
+			return
+		}
+
+		if offset + str_len + 2 > cstr_len {
 			err = fmt.Errorf("invalid format $(string) len")
 			return
 		}
@@ -243,7 +253,7 @@ func (this *RedisCmd) genCmd(cmd_str string) (cmds []*RedisCmdItem, offset int, 
 
 func (this *RedisCmd) Read(c io.Reader, buf *bytes.Buffer) (n int, rcount int, err error) {
 	//刻意测试粘包问题
-	rdata := make([]byte, 5)
+	rdata := make([]byte, 1)
 	for {
 		rcount++
 		n, err = c.Read(rdata)
@@ -253,6 +263,7 @@ func (this *RedisCmd) Read(c io.Reader, buf *bytes.Buffer) (n int, rcount int, e
 
 		buf.Write(rdata[:n])
 		resp_data := buf.Bytes()
+		//fmt.Println("++++++++++++++", RedisStr(resp_data))
 		_, n, err = this.genCmd(string(resp_data))
 		if err == nil || err == ERROR_CMD {
 			break
