@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="6f17e9b4-7400-4cd0-8ac0-6cead62ada5f" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/spirit-chat/lib/log/log.go" beforeDir="false" afterPath="$PROJECT_DIR$/spirit-chat/lib/log/log.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/spirit-chat/server/src/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/spirit-chat/server/src/main.go" afterDir="false" />
-    </list>
+    <list default="true" id="6f17e9b4-7400-4cd0-8ac0-6cead62ada5f" name="Default Changelist" comment="" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -79,7 +76,7 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/spirit-chat/lib/log/log.go">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="298">
+            <state relative-caret-position="460">
               <caret line="65" column="88" selection-start-line="65" selection-start-column="88" selection-end-line="65" selection-end-column="88" />
               <folding>
                 <element signature="e#13#134#0" expanded="true" />
@@ -249,29 +246,7 @@
               <item name="test-tools" type="b2602c69:ProjectViewProjectNode" />
               <item name="test-tools" type="462c0819:PsiDirectoryNode" />
               <item name="spirit-chat" type="462c0819:PsiDirectoryNode" />
-              <item name="lib" type="462c0819:PsiDirectoryNode" />
-              <item name="log" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="test-tools" type="b2602c69:ProjectViewProjectNode" />
-              <item name="test-tools" type="462c0819:PsiDirectoryNode" />
-              <item name="spirit-chat" type="462c0819:PsiDirectoryNode" />
               <item name="server" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="test-tools" type="b2602c69:ProjectViewProjectNode" />
-              <item name="test-tools" type="462c0819:PsiDirectoryNode" />
-              <item name="spirit-chat" type="462c0819:PsiDirectoryNode" />
-              <item name="server" type="462c0819:PsiDirectoryNode" />
-              <item name="src" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="test-tools" type="b2602c69:ProjectViewProjectNode" />
-              <item name="test-tools" type="462c0819:PsiDirectoryNode" />
-              <item name="spirit-chat" type="462c0819:PsiDirectoryNode" />
-              <item name="server" type="462c0819:PsiDirectoryNode" />
-              <item name="src" type="462c0819:PsiDirectoryNode" />
-              <item name="chat" type="462c0819:PsiDirectoryNode" />
             </path>
             <path>
               <item name="test-tools" type="b2602c69:ProjectViewProjectNode" />
@@ -332,7 +307,6 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
-    <editor active="true" />
     <layout>
       <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.25266525" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
@@ -745,7 +719,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/spirit-chat/lib/log/log.go">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="298">
+        <state relative-caret-position="460">
           <caret line="65" column="88" selection-start-line="65" selection-start-column="88" selection-end-line="65" selection-end-column="88" />
           <folding>
             <element signature="e#13#134#0" expanded="true" />
