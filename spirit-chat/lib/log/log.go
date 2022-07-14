@@ -63,6 +63,7 @@ func InitLog(log_path string, log_level string) {
 	}
 
 	lv, _ := logrus.ParseLevel(log_level)
+	logrus.SetFormatter(&logrus.TextFormatter{DisableColors: true}) //防止linux输出没有时间之类的东西
 	logrus.SetLevel(lv)
 	logrus.AddHook(newFileHook(log_file))
 }
