@@ -70,7 +70,6 @@ func action(c *cli.Context) (err error) {
 	go svr.RunLoop(etc.Tcp_addr, &chat.ChatSvr{}, etc.Codec, etc.InitTcpOpts()...)
 
 	logrus.Infof("=========sever start success========")
-
 	//等待结束
 	sig := make(chan os.Signal)
 	signal.Notify(sig, os.Interrupt, syscall.SIGKILL)
