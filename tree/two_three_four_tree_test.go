@@ -1,4 +1,4 @@
-package tree_study
+package tree
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 
 func Test_TwoThreeFourTree(t *testing.T) {
 	//初始化乱序数组
-	Num := 100
+	Num := 50
 	values := make([]int, Num)
 	for i := 0;i < Num;i++ {
 		values[i] = i
@@ -38,5 +38,9 @@ func Test_TwoThreeFourTree(t *testing.T) {
 		fmt.Println("value:", rv, "path:", tree.Path(rv))
 	}
 
+	for _, rv := range values {
+		fmt.Println("value:", rv, "remove:", tree.Remove(rv))
+		tree.Print()
+	}
 }
 

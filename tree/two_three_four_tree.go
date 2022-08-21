@@ -1,4 +1,4 @@
-package tree_study
+package tree
 
 import (
 	"fmt"
@@ -71,7 +71,15 @@ func (this *TwoThreeFourNode) getValueIndex(value int) int {
 
 	return index
 }
+func (this *TwoThreeFourNode) getSubIndex(subNode *TwoThreeFourNode) int {
+	for i, tSubNode := range this.SubNodes {
+		if tSubNode == subNode {
+			return i
+		}
+	}
 
+	return -1
+}
 func (this *TwoThreeFourNode) getSubNode(index int) (subNode *TwoThreeFourNode) {
 	if this.IsNil() {
 		return
@@ -119,6 +127,11 @@ func (this *TwoThreeFourNode) print(index, ceng int, prefix string) {
 		return
 	}
 
+	vcnt := len(this.Values)
+	if vcnt == 0 || vcnt > two_three_four_max || vcnt != len(this.SubNodes) - 1 {
+		panic(fmt.Sprintf("print find invalid node:%v", this))
+	}
+
 	Print(fmt.Sprintf("%v", this.Values))
 	for i, subNode := range this.SubNodes {
 		subNode.print(i, ceng + 1, prefix + print_prefix)
@@ -149,6 +162,8 @@ func (this *TwoThreeFourNode) removeSubNode(index int) {
 }
 
 func (this *TwoThreeFourNode) addSubNode(index int, subNode *TwoThreeFourNode) {
+	subNode.Parent = this
+
 	if len(this.SubNodes) == 0 {
 		this.SubNodes = []*TwoThreeFourNode{ subNode }
 		return
@@ -259,9 +274,6 @@ func (this *TwoThreeFourNode) merge(oldNode, newNode *TwoThreeFourNode) (root *T
 	this.removeSubNode(subIndex)
 	for i, subNode := range newNode.SubNodes {
 		this.addSubNode(subIndex+i, subNode)
-
-		//父节点
-		subNode.Parent = this
 	}
 
 	root = this
@@ -319,12 +331,12 @@ func (this *TwoThreeFourNode) insert(value int) (root *TwoThreeFourNode) {
 */
 func (this *TwoThreeFourNode) path(value int) (path []int) {
 	curNode := this
-	var find bool
+	var findIndex = -1
 	for curNode != nil {
-		if find {
-			path = append(path, -1)
-			curNode = curNode.getSubNode(0)
-			continue
+		if findIndex >= 0 {
+			path = append(path, findIndex)
+			curNode = curNode.getSubNode(findIndex)
+ 			continue
 		}
 
 		var index int
@@ -333,7 +345,7 @@ func (this *TwoThreeFourNode) path(value int) (path []int) {
 			if value < v {
 				break
 			} else if value == v {
-				find = true
+				findIndex = index
 				break
 			}
 		}
@@ -345,17 +357,199 @@ func (this *TwoThreeFourNode) path(value int) (path []int) {
 	return
 }
 
+/*
+	让所在2节点转换成3，4节点，方便后续移动值到叶子节点删除
+	1、2节点，合并右边2节点
+	2、2节点，合并左边2节点
+	3、2节点，偷取右边3，4节点一个值
+	4、2节点，偷取左边3，4节点一个值
+*/
+func (this *TwoThreeFourNode) transfer() {
+	//必须是2节点 且
+	if this.IsNil() || this.Parent == nil || len(this.Values) != 1 {
+		return
+	}
+
+	pNode := this.Parent
+	var rightNode, leftNode *TwoThreeFourNode
+	index := pNode.getSubIndex(this) //最左边
+	pKeyIndex := index
+	dtype := 0 //对应上面四种情况
+	if index == 0 {
+		rightNode = pNode.getSubNode(index+1)
+		leftNode = this
+		if len(rightNode.Values) == 1 {
+			dtype = 1
+		} else {
+			dtype = 3
+		}
+	} else if index == len(pNode.SubNodes) - 1 { //最右边
+		rightNode = this
+		leftNode = pNode.getSubNode(index-1)
+		pKeyIndex -= 1
+		if len(leftNode.Values) == 1 {
+			dtype = 2
+		} else {
+			dtype = 4
+		}
+	} else { //中间
+		lNode := pNode.getSubNode(index-1)
+		rNode := pNode.getSubNode(index+1)
+		lNodeLen := len(lNode.Values)
+		rNodeLen := len(rNode.Values)
+		if lNodeLen <= rNodeLen {
+			leftNode = lNode
+			rightNode = this
+			pKeyIndex -= 1
+			if lNodeLen == 1 {
+				dtype = 2
+			} else {
+				dtype = 4
+			}
+		} else {
+			leftNode = this
+			rightNode = rNode
+			if rNodeLen == 1 {
+				dtype = 1
+			} else {
+				dtype = 3
+			}
+		}
+	}
+
+	if dtype == 1 || dtype == 2 {
+		pNodeLen := len(pNode.Values)
+		if pNodeLen == 1 { //父亲是2节点
+			pNode.addValue(leftNode.Values[0])
+			pNode.addValue(rightNode.Values[0])
+
+			//合并子节点
+			pNode.SubNodes = nil
+			var i int
+			leftNode.Parent = nil
+			for _, subNode := range leftNode.SubNodes {
+				pNode.addSubNode(i, subNode)
+				i++
+			}
+
+			leftNode.Parent = nil
+			for _, subNode := range rightNode.SubNodes {
+				pNode.addSubNode(i, subNode)
+				i++
+			}
+		} else { //父节点偷取一个节点,合并左右节点
+			pValue := pNode.Values[pKeyIndex]
+			pNode.Values = append(pNode.Values[:pKeyIndex], pNode.Values[pKeyIndex+1:]...)
+			pNode.removeSubNode(pKeyIndex) //删除两个节点
+			pNode.removeSubNode(pKeyIndex)
+
+			//合并成一个4节点
+			newNode := &TwoThreeFourNode{}
+			newNode.addValue(pValue)
+			newNode.addValue(leftNode.Values[0])
+			newNode.addValue(rightNode.Values[0])
+			var i int
+			for _, subNode := range leftNode.SubNodes {
+				newNode.addSubNode(i, subNode)
+				i++
+			}
+
+			for _, subNode := range rightNode.SubNodes {
+				newNode.addSubNode(i, subNode)
+				i++
+			}
+
+			//挂载新节点
+			pNode.addSubNode(pKeyIndex, newNode)
+		}
+	} else if dtype == 3 {
+		pValue := pNode.Values[pKeyIndex]
+		pNode.Values[pKeyIndex] = rightNode.Values[0]
+		rightNode.Values = rightNode.Values[1:]
+
+		leftNode.addValue(pValue)
+		if len(rightNode.SubNodes) > 0 {
+			leftNode.addSubNode(len(leftNode.SubNodes), rightNode.getSubNode(0))
+			rightNode.SubNodes = rightNode.SubNodes[1:]
+		}
+	} else if dtype == 4 {
+		pValue := pNode.Values[pKeyIndex]
+		pNode.Values[pKeyIndex] = leftNode.Values[len(leftNode.Values) - 1]
+		leftNode.Values = leftNode.Values[:len(leftNode.Values) - 1]
+
+		rightNode.addValue(pValue)
+		if len(leftNode.SubNodes) > 0 {
+			rightNode.addSubNode(0, leftNode.getSubNode(len(leftNode.SubNodes) - 1))
+			leftNode.SubNodes = leftNode.SubNodes[:len(leftNode.SubNodes) - 1]
+		}
+	} else {
+		panic("transfer invalid dtype")
+	}
+}
+
+func (this *TwoThreeFourNode) transferValue(value int) {
+	path := this.path(value)
+	curNode := this
+
+	//fmt.Println("+++++++++++++ value:", value, this.Parent)
+	//this.print(0, 1, "")
+	for i := 0;i < len(path);i++{
+		subIndex := path[i]
+		if subIndex < 0 { //-1情况直接默认最左边
+			subIndex = 0
+		}
+		nextNode := curNode.getSubNode(subIndex) //先获取，不然transfer会导致路径失效
+
+		curNode.transfer()
+
+		curNode = nextNode
+	}
+
+	//fmt.Println("----------")
+	//this.print(0, 1, "")
+}
 func (this *TwoThreeFourNode) remove(value int) bool {
 	if this.find(value) < 0 {
 		return false
 	}
 
+	this.transferValue(value)
 	path := this.path(value)
-	for {
+	curNode := this
+	for i := 0;i < len(path); i++{
+		subIndex := path[i]
+		if subIndex < 0 {
+			subIndex = 0
+		}
 
+		nextNode := curNode.getSubNode(subIndex)
+		var findIndex  = -1
+		for vi, v := range curNode.Values {
+			if value == v {
+				findIndex = vi
+				break
+			}
+		}
+
+		if findIndex >= 0 {
+			if curNode.IsLeaf() { // 在叶子节点上直接删除
+				curNode.Values = append(curNode.Values[:findIndex], curNode.Values[findIndex+1:]...)
+				return true
+			}
+
+			//往下一层不停的替换
+			valueIndex := len(nextNode.Values) - 1
+			curNode.Values[findIndex] = nextNode.Values[valueIndex]
+			nextNode.Values = append(nextNode.Values[:valueIndex], nextNode.Values[valueIndex+1:]...)
+			nextNode.addValue(value)
+		}
+
+		curNode = nextNode
 	}
-	return true
+
+	return false
 }
+
 
 type TwoThreeFourTree struct {
 	Root *TwoThreeFourNode
@@ -379,4 +573,12 @@ func (this *TwoThreeFourTree) Print() {
 
 func (this *TwoThreeFourTree) Path(value int) []int {
 	return this.Root.path(value)
+}
+
+func (this *TwoThreeFourTree) Remove(value int) bool {
+	ok := this.Root.remove(value)
+	if len(this.Root.Values) == 0 {
+		this.Root = nil
+	}
+	return ok
 }
