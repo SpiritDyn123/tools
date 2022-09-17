@@ -9,7 +9,7 @@ import (
 
 func Test_TwoThreeFourTree(t *testing.T) {
 	//初始化乱序数组
-	Num := 50
+	Num := 54
 	values := make([]int, Num)
 	for i := 0;i < Num;i++ {
 		values[i] = i
@@ -32,12 +32,16 @@ func Test_TwoThreeFourTree(t *testing.T) {
 	tree.Print()
 
 	rand.Seed(time.Now().UnixNano())
-	for i := 0; i < 5;i++ {
+	for i := 0; i < 2;i++ {
 		rv := values[rand.Intn(len(values))]
 		fmt.Println("value:", rv, "find count:", tree.Find(rv))
 		fmt.Println("value:", rv, "path:", tree.Path(rv))
 	}
 
+	//tv := 21
+	//fmt.Println("value:", tv, "path:", tree.Path(tv))
+	//tree.TransValue(tv)
+	//tree.Print()
 	for _, rv := range values {
 		fmt.Println("value:", rv, "remove:", tree.Remove(rv))
 		tree.Print()

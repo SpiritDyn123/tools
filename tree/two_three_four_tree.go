@@ -33,6 +33,18 @@ func (this *TwoThreeFourNode) Count() int {
 	return len(this.Values)
 }
 
+func (this *TwoThreeFourNode) isTwo() bool {
+	return this != nil && len(this.Values) == 1
+}
+
+func (this *TwoThreeFourNode) isThree() bool {
+	return this != nil && len(this.Values) == 2
+}
+
+func (this *TwoThreeFourNode) isFour() bool {
+	return this != nil && len(this.Values) == 3
+}
+
 func (this *TwoThreeFourNode) IsFull() bool {
 	if this == nil {
 		return false
@@ -128,7 +140,7 @@ func (this *TwoThreeFourNode) print(index, ceng int, prefix string) {
 	}
 
 	vcnt := len(this.Values)
-	if vcnt == 0 || vcnt > two_three_four_max || vcnt != len(this.SubNodes) - 1 {
+	if vcnt == 0 || vcnt > two_three_four_max || (len(this.SubNodes) != 0 && vcnt != len(this.SubNodes) - 1) {
 		panic(fmt.Sprintf("print find invalid node:%v", this))
 	}
 
@@ -334,8 +346,8 @@ func (this *TwoThreeFourNode) path(value int) (path []int) {
 	var findIndex = -1
 	for curNode != nil {
 		if findIndex >= 0 {
-			path = append(path, findIndex)
-			curNode = curNode.getSubNode(findIndex)
+			path = append(path, 0)
+			curNode = curNode.getSubNode(0)
  			continue
 		}
 
@@ -364,10 +376,10 @@ func (this *TwoThreeFourNode) path(value int) (path []int) {
 	3、2节点，偷取右边3，4节点一个值
 	4、2节点，偷取左边3，4节点一个值
 */
-func (this *TwoThreeFourNode) transfer() {
+func (this *TwoThreeFourNode) transfer() *TwoThreeFourNode {
 	//必须是2节点 且
-	if this.IsNil() || this.Parent == nil || len(this.Values) != 1 {
-		return
+	if this.IsNil() || this.Parent == nil || !this.isTwo() {
+		return this
 	}
 
 	pNode := this.Parent
@@ -417,11 +429,13 @@ func (this *TwoThreeFourNode) transfer() {
 		}
 	}
 
+	var newNode *TwoThreeFourNode
 	if dtype == 1 || dtype == 2 {
 		pNodeLen := len(pNode.Values)
 		if pNodeLen == 1 { //父亲是2节点
 			pNode.addValue(leftNode.Values[0])
 			pNode.addValue(rightNode.Values[0])
+			newNode = pNode
 
 			//合并子节点
 			pNode.SubNodes = nil
@@ -444,7 +458,7 @@ func (this *TwoThreeFourNode) transfer() {
 			pNode.removeSubNode(pKeyIndex)
 
 			//合并成一个4节点
-			newNode := &TwoThreeFourNode{}
+			newNode = &TwoThreeFourNode{}
 			newNode.addValue(pValue)
 			newNode.addValue(leftNode.Values[0])
 			newNode.addValue(rightNode.Values[0])
@@ -463,6 +477,7 @@ func (this *TwoThreeFourNode) transfer() {
 			pNode.addSubNode(pKeyIndex, newNode)
 		}
 	} else if dtype == 3 {
+		newNode = this
 		pValue := pNode.Values[pKeyIndex]
 		pNode.Values[pKeyIndex] = rightNode.Values[0]
 		rightNode.Values = rightNode.Values[1:]
@@ -473,6 +488,8 @@ func (this *TwoThreeFourNode) transfer() {
 			rightNode.SubNodes = rightNode.SubNodes[1:]
 		}
 	} else if dtype == 4 {
+		newNode = this
+
 		pValue := pNode.Values[pKeyIndex]
 		pNode.Values[pKeyIndex] = leftNode.Values[len(leftNode.Values) - 1]
 		leftNode.Values = leftNode.Values[:len(leftNode.Values) - 1]
@@ -485,66 +502,91 @@ func (this *TwoThreeFourNode) transfer() {
 	} else {
 		panic("transfer invalid dtype")
 	}
+
+	return newNode
 }
 
 func (this *TwoThreeFourNode) transferValue(value int) {
 	path := this.path(value)
 	curNode := this
 
-	//fmt.Println("+++++++++++++ value:", value, this.Parent)
-	//this.print(0, 1, "")
 	for i := 0;i < len(path);i++{
 		subIndex := path[i]
-		if subIndex < 0 { //-1情况直接默认最左边
-			subIndex = 0
-		}
 		nextNode := curNode.getSubNode(subIndex) //先获取，不然transfer会导致路径失效
 
 		curNode.transfer()
 
 		curNode = nextNode
+		//fmt.Println("--------------------------------")
+		//this.print(0,1, "")
 	}
-
-	//fmt.Println("----------")
-	//this.print(0, 1, "")
 }
 func (this *TwoThreeFourNode) remove(value int) bool {
 	if this.find(value) < 0 {
 		return false
 	}
 
-	this.transferValue(value)
-	path := this.path(value)
+	//WRONG!!!
+	//this.transferValue(value)
+	//path := this.path(value)
+	//curNode := this
+	//for i := 0;i < len(path); i++{
+	//	subIndex := path[i]
+	//	nextNode := curNode.getSubNode(subIndex)
+	//	var findIndex  = -1
+	//	for vi, v := range curNode.Values {
+	//		if value == v {
+	//			findIndex = vi
+	//			break
+	//		}
+	//	}
+	//
+	//	if findIndex >= 0 {
+	//		if curNode.IsLeaf() { // 在叶子节点上直接删除
+	//			curNode.Values = append(curNode.Values[:findIndex], curNode.Values[findIndex+1:]...)
+	//			return true
+	//		}
+	//
+	//		//往下一层不停的替换
+	//		valueIndex := len(nextNode.Values) - 1
+	//		curNode.Values[findIndex] = nextNode.Values[valueIndex]
+	//		nextNode.Values = append(nextNode.Values[:valueIndex], nextNode.Values[valueIndex+1:]...)
+	//		nextNode.addValue(value)
+	//	}
+	//
+	//	curNode = nextNode
+	//}
+
 	curNode := this
-	for i := 0;i < len(path); i++{
-		subIndex := path[i]
-		if subIndex < 0 {
-			subIndex = 0
+	for curNode != nil {
+		if curNode.isTwo() {
+			curNode = curNode.transfer() //转换
+			this.print(0,1, "")
 		}
 
-		nextNode := curNode.getSubNode(subIndex)
-		var findIndex  = -1
-		for vi, v := range curNode.Values {
-			if value == v {
-				findIndex = vi
+		findIndex := curNode.Count()
+		for i, v := range curNode.Values {
+			if value == v { //找到了
+				findIndex = i
+				if curNode.IsLeaf() {
+					curNode.Values = append(curNode.Values[:i], curNode.Values[i+1:]...)
+					return true
+				}
+
+				//往下面沉积
+				nextNode := curNode.getSubNode(findIndex)
+				ncount := nextNode.Count()
+				rvalue := nextNode.Values[ncount - 1]
+				curNode.Values[findIndex] = rvalue
+				nextNode.Values[ncount - 1] = value
+				break
+			} else if value < v{
+				findIndex = i
 				break
 			}
 		}
 
-		if findIndex >= 0 {
-			if curNode.IsLeaf() { // 在叶子节点上直接删除
-				curNode.Values = append(curNode.Values[:findIndex], curNode.Values[findIndex+1:]...)
-				return true
-			}
-
-			//往下一层不停的替换
-			valueIndex := len(nextNode.Values) - 1
-			curNode.Values[findIndex] = nextNode.Values[valueIndex]
-			nextNode.Values = append(nextNode.Values[:valueIndex], nextNode.Values[valueIndex+1:]...)
-			nextNode.addValue(value)
-		}
-
-		curNode = nextNode
+		curNode = curNode.getSubNode(findIndex)
 	}
 
 	return false
@@ -573,6 +615,10 @@ func (this *TwoThreeFourTree) Print() {
 
 func (this *TwoThreeFourTree) Path(value int) []int {
 	return this.Root.path(value)
+}
+
+func (this *TwoThreeFourTree) TransValue(value int) {
+	this.Root.transferValue(value)
 }
 
 func (this *TwoThreeFourTree) Remove(value int) bool {
