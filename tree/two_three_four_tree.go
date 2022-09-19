@@ -557,11 +557,44 @@ func (this *TwoThreeFourNode) remove(value int) bool {
 	//	curNode = nextNode
 	//}
 
+
+	//替换到叶子上
 	curNode := this
+	var dstNode *TwoThreeFourNode
+	var dstIndex int
 	for curNode != nil {
+		if curNode.IsLeaf() && dstNode != nil {
+			ncount := curNode.Count()
+			dstNode.Values[dstIndex] = curNode.Values[ncount - 1]
+			curNode.Values[ncount - 1] = value
+			break
+		} else {
+			var findex = curNode.Count()
+			if dstNode == nil {
+				for i, v := range curNode.Values {
+					if value == v { //找到了
+						dstNode = curNode
+						dstIndex = i
+						findex = i
+						break
+					} else if value < v{
+						findex = i
+						break
+					}
+				}
+			}
+
+			curNode = curNode.getSubNode(findex)
+		}
+	}
+
+	//删除
+	curNode = this
+	var b_node bool
+	for curNode != nil {
+		b_node := !b_node && dstNode != nil && curNode == dstNode
 		if curNode.isTwo() {
 			curNode = curNode.transfer() //转换
-			this.print(0,1, "")
 		}
 
 		findIndex := curNode.Count()
@@ -572,20 +605,15 @@ func (this *TwoThreeFourNode) remove(value int) bool {
 					curNode.Values = append(curNode.Values[:i], curNode.Values[i+1:]...)
 					return true
 				}
-
-				//往下面沉积
-				nextNode := curNode.getSubNode(findIndex)
-				ncount := nextNode.Count()
-				rvalue := nextNode.Values[ncount - 1]
-				curNode.Values[findIndex] = rvalue
-				nextNode.Values[ncount - 1] = value
-				break
 			} else if value < v{
 				findIndex = i
 				break
 			}
 		}
 
+		if b_node {
+			findIndex -= 1
+		}
 		curNode = curNode.getSubNode(findIndex)
 	}
 

@@ -38,9 +38,9 @@ func Test_TwoThreeFourTree(t *testing.T) {
 		fmt.Println("value:", rv, "path:", tree.Path(rv))
 	}
 
-	//tv := 21
+	//tv := 35
 	//fmt.Println("value:", tv, "path:", tree.Path(tv))
-	//tree.TransValue(tv)
+	//tree.Remove(tv)
 	//tree.Print()
 	for _, rv := range values {
 		fmt.Println("value:", rv, "remove:", tree.Remove(rv))
