@@ -44,7 +44,15 @@ func Test_TwoThreeFourTree(t *testing.T) {
 	//tree.Print()
 	for _, rv := range values {
 		fmt.Println("value:", rv, "remove:", tree.Remove(rv))
-		tree.Print()
+		//tree.Print()
 	}
+
+	tree.Print()
+
+	for _, v := range values {
+		tree.Insert(v)
+	}
+
+	tree.Print()
 }
 

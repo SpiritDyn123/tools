@@ -296,6 +296,12 @@ func (this *TwoThreeFourNode) merge(oldNode, newNode *TwoThreeFourNode) (root *T
 	1、从根节点往下找叶子节点插入
 	2、遇到满（4）节点就split增加了height 往上合并merge降低层数，从而保证层数不变
 	3、2的操作可以保证满4节点向上移动，下次插入就会再次执行split操作
+
+	详细思想：
+		- 插入都是向最下面一层插入；
+		- 升元：将插入结点由 2-结点升级成 3-结点，或由 3-结点升级成 4-结点；
+		- 向 4-结点插入元素后，需要将中间元素提到父结点升元，原结点变成两个 2-结点，再把元素插入 2-结点中，
+	      如果父结点也是4-结点，则递归向上层升元，至到根结点后将树高加1；
 */
 func (this *TwoThreeFourNode) insert(value int) (root *TwoThreeFourNode) {
 	if this == nil {
@@ -309,7 +315,6 @@ func (this *TwoThreeFourNode) insert(value int) (root *TwoThreeFourNode) {
 	if this.find(value) >= 0 {
 		return
 	}
-
 
 	curNode := this
 	root = this
@@ -506,67 +511,22 @@ func (this *TwoThreeFourNode) transfer() *TwoThreeFourNode {
 	return newNode
 }
 
-func (this *TwoThreeFourNode) transferValue(value int) {
-	path := this.path(value)
-	curNode := this
-
-	for i := 0;i < len(path);i++{
-		subIndex := path[i]
-		nextNode := curNode.getSubNode(subIndex) //先获取，不然transfer会导致路径失效
-
-		curNode.transfer()
-
-		curNode = nextNode
-		//fmt.Println("--------------------------------")
-		//this.print(0,1, "")
-	}
-}
 func (this *TwoThreeFourNode) remove(value int) bool {
 	if this.find(value) < 0 {
 		return false
 	}
 
-	//WRONG!!!
-	//this.transferValue(value)
-	//path := this.path(value)
-	//curNode := this
-	//for i := 0;i < len(path); i++{
-	//	subIndex := path[i]
-	//	nextNode := curNode.getSubNode(subIndex)
-	//	var findIndex  = -1
-	//	for vi, v := range curNode.Values {
-	//		if value == v {
-	//			findIndex = vi
-	//			break
-	//		}
-	//	}
-	//
-	//	if findIndex >= 0 {
-	//		if curNode.IsLeaf() { // 在叶子节点上直接删除
-	//			curNode.Values = append(curNode.Values[:findIndex], curNode.Values[findIndex+1:]...)
-	//			return true
-	//		}
-	//
-	//		//往下一层不停的替换
-	//		valueIndex := len(nextNode.Values) - 1
-	//		curNode.Values[findIndex] = nextNode.Values[valueIndex]
-	//		nextNode.Values = append(nextNode.Values[:valueIndex], nextNode.Values[valueIndex+1:]...)
-	//		nextNode.addValue(value)
-	//	}
-	//
-	//	curNode = nextNode
-	//}
-
-
-	//替换到叶子上
+	//替换到叶子上(左子树最右点，或者右子树最左点)
 	curNode := this
 	var dstNode *TwoThreeFourNode
 	var dstIndex int
 	for curNode != nil {
-		if curNode.IsLeaf() && dstNode != nil {
-			ncount := curNode.Count()
-			dstNode.Values[dstIndex] = curNode.Values[ncount - 1]
-			curNode.Values[ncount - 1] = value
+		if curNode.IsLeaf() {
+			if dstNode != nil {
+				ncount := curNode.Count()
+				dstNode.Values[dstIndex] = curNode.Values[ncount - 1]
+				curNode.Values[ncount - 1] = value
+			}
 			break
 		} else {
 			var findex = curNode.Count()
@@ -599,12 +559,9 @@ func (this *TwoThreeFourNode) remove(value int) bool {
 
 		findIndex := curNode.Count()
 		for i, v := range curNode.Values {
-			if value == v { //找到了
-				findIndex = i
-				if curNode.IsLeaf() {
-					curNode.Values = append(curNode.Values[:i], curNode.Values[i+1:]...)
-					return true
-				}
+			if value == v { //找到了,一定在叶子上
+				curNode.Values = append(curNode.Values[:i], curNode.Values[i+1:]...)
+				return true
 			} else if value < v{
 				findIndex = i
 				break
@@ -643,10 +600,6 @@ func (this *TwoThreeFourTree) Print() {
 
 func (this *TwoThreeFourTree) Path(value int) []int {
 	return this.Root.path(value)
-}
-
-func (this *TwoThreeFourTree) TransValue(value int) {
-	this.Root.transferValue(value)
 }
 
 func (this *TwoThreeFourTree) Remove(value int) bool {
