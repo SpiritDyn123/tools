@@ -6,6 +6,8 @@ import (
 
 /*
 	2-3-4树
+	参考：
+	- https://www.cnblogs.com/xzjxylophone/p/7542884.html
 */
 
 const (

@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 )
+//go test -v -run TwoThreeFourTr .
 
 func Test_TwoThreeFourTree(t *testing.T) {
 	//初始化乱序数组
