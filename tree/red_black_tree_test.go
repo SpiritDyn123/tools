@@ -8,15 +8,11 @@ import (
 
 //go test -v -run RedBlueTre .
 func TestRedBlueTree(t *testing.T) {
-	Num := 20
+	Num := 18
 	values := make([]int, Num)
 	for i := 0;i < Num;i++ {
 		values[i] = i
 	}
-
-	//rand.Shuffle(Num, func(i, j int) {
-	//	values[i], values[j] = values[j], values[i]
-	//})
 
 	if Num <= 20 {
 		fmt.Println("======values:", values)
@@ -25,14 +21,19 @@ func TestRedBlueTree(t *testing.T) {
 	tree := &RedBlackTree{}
 	for _, v := range values {
 		tree.Insert(v)
-		fmt.Println("----------------------------v:", v)
-		tree.Print()
-	}
-
-
-	for _, v := range values {
-		//fmt.Println("--------------remove:", v, "----------------")
-		tree.Remove(v)
+		//fmt.Println("remove:", v)
 		//tree.Print()
+	}
+	tree.Print()
+
+	//rand.Shuffle(Num, func(i, j int) {
+	//	values[i], values[j] = values[j], values[i]
+	//})
+
+	values = []int{12, 8, 10, 9}
+	for _, v := range values {
+		fmt.Println("--------------remove:", v, "----------------")
+		tree.Remove(v)
+		tree.Print()
 	}
 }
