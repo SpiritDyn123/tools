@@ -285,20 +285,20 @@ func (this *redBlackNode) insert2(value int, parent *redBlackNode) *redBlackNode
 
 
 	//----------------------最核心-------------------------
-	//插入节点为黑的时候跳过
+	//1、插入节点为黑的时候跳过
 	if newNode.isBlack() {
 		return this
 	}
 
-	//遇到黑色,表示到爷爷层
+	//2、遇到黑色,表示到爷爷层
 	if !this.isBlack() {
 		return this
 	}
 
-	//最下面一层 父亲层刚好是黑色 不作操作
-	if newNode.value == value {
-		return this
-	}
+	//3、最下面一层 父亲层刚好是黑色 不作操作 就是情况1
+	//if newNode.value == value {
+	//	return this
+	//}
 
 	bb_left := false
 	gsNode := newNode.right
