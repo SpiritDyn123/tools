@@ -8,7 +8,7 @@ import (
 
 //go test -v -run RedBlueTre .
 func TestRedBlueTree(t *testing.T) {
-	Num := 18
+	Num := 17
 	values := make([]int, Num)
 	for i := 0;i < Num;i++ {
 		values[i] = i
@@ -30,10 +30,10 @@ func TestRedBlueTree(t *testing.T) {
 	//	values[i], values[j] = values[j], values[i]
 	//})
 
-	values = []int{12, 8, 10, 9}
-	for _, v := range values {
-		fmt.Println("--------------remove:", v, "----------------")
-		tree.Remove(v)
-		tree.Print()
-	}
+	//values = []int{12, 8, 10, 9}
+	//for _, v := range values {
+	//	fmt.Println("--------------remove:", v, "----------------")
+	//	tree.Remove(v)
+	//	tree.Print()
+	//}
 }

@@ -94,6 +94,20 @@ func (this *redBlackNode) valueWithColor() string {
 	return fmt.Sprintf("%c[1;40;%dm%d%c[0m", 0x1B, color, this.value, 0x1B)
 }
 
+func (this *redBlackNode) String() string {
+	str := ""
+	if this.left != nil {
+		str += fmt.Sprintf("%s<-", this.left.valueWithColor())
+	}
+
+	str += fmt.Sprintf("%s", this.valueWithColor())
+
+	if this.right != nil {
+		str += fmt.Sprintf("->%s", this.right.valueWithColor())
+	}
+
+	return str
+}
 func (this *redBlackNode) print(pos string, ceng int, prefix string) {
 	if this == nil {
 		fmt.Println("[NIL TREE]")
@@ -190,7 +204,13 @@ func (this *redBlackNode) ll() *redBlackNode {
 	}
 	newNode.parent = this.parent
 
-	newNode.setPosColor(rbColor_black, true)
+	if newNode.left != nil {
+		newNode.left.parent = newNode
+	}
+	if newNode.right != nil {
+		newNode.right.parent = newNode
+	}
+
 	return newNode
 }
 
@@ -205,7 +225,12 @@ func (this *redBlackNode) rr() *redBlackNode {
 	}
 	newNode.parent = this.parent
 
-	newNode.setPosColor(rbColor_black, true)
+	if newNode.left != nil {
+		newNode.left.parent = newNode
+	}
+	if newNode.right != nil {
+		newNode.right.parent = newNode
+	}
 
 	return newNode
 }
@@ -226,93 +251,106 @@ func (this *redBlackNode) rl() *redBlackNode {
 	3、判断爷爷节点的case3 case4 旋转变色逻辑即可
 	注意：
 		1、一定是3层【爷父子】绑定做一次caseV判断
-*/
-func (this *redBlackNode) insert(value int, parent *redBlackNode) *redBlackNode {
+
+	====更精简易懂的实现=======
+	！！！爷父子三层一次操作（换种理解：遇到黑色（除了最底下的父亲层）就操作）
+ */
+func (this *redBlackNode) insert2(value int, parent *redBlackNode) *redBlackNode {
 	if this == nil {
-		this = &redBlackNode{
-			parent: parent,
-			color:  rbColor_red,
-			value:  value,
+		node := &redBlackNode{
+			value: value,
+			color: rbColor_red,
 		}
 
-		//根节点
 		if parent == nil {
-			this.color = rbColor_black
-			return this
+			node.color = rbColor_black
 		}
 
-		return this
+		return node
 	}
 
-	//插入之前一定要先判断
-	case_v := this.caseV()
-
-	childNode := &this.right
+	b_left := false
+	var newNode *redBlackNode
+	var brother *redBlackNode
 	if value < this.value {
-		childNode = &this.left
+		this.left = this.left.insert2(value, this)
+		b_left = true
+		newNode = this.left
+		brother = this.right
+	} else {
+		this.right = this.right.insert2(value, this)
+		newNode = this.right
+		brother = this.left
 	}
-	sunNode := (*childNode).insert(value, this)
-	*childNode = sunNode
 
-	/*
-		    ++原则是遇到黑色节点就判断++
-			1、父节点是黑色，直接插入（或者说插入层不做任何操作，退回上一层（爷爷节点））
-			2、当前为红色节点
-			3、当前为2节点情况(单黑情况）
-	*/
-	if sunNode.value == value || case_v == 0 || case_v == 2 { //回退到黑色根节点（爷爷节点）
+
+	//----------------------最核心-------------------------
+	//插入节点为黑的时候跳过
+	if newNode.isBlack() {
 		return this
 	}
 
-	gsNode := sunNode.right //孙子节点
-	if value < sunNode.value {
-		gsNode = gsNode.left
-	}
-
-	if gsNode.color != rbColor_red { //孙子节点必须是红色才判断
+	//遇到黑色,表示到爷爷层
+	if !this.isBlack() {
 		return this
 	}
 
-	switch case_v {
-	case 3:
-		if sunNode.color != rbColor_red {
-			return this
-		}
+	//最下面一层 父亲层刚好是黑色 不作操作
+	if newNode.value == value {
+		return this
+	}
 
-		if value < this.value { //左子树
-			if value < sunNode.value { //RR
+	bb_left := false
+	gsNode := newNode.right
+	if value <= newNode.value {
+		bb_left = true
+		gsNode = newNode.left
+	}
+
+	if gsNode.color == rbColor_black {
+		return this
+	}
+	//--------------------------------------------------
+
+
+	if brother == nil || brother.isBlack() { //3节点
+		if b_left {
+			if bb_left {
 				this = this.rr()
-			} else { //LR
+			} else {
 				this = this.lr()
 			}
-		} else { //右子树
-			if value > sunNode.value { //LL
-				this = this.ll()
-			} else { //RL
+		} else {
+			if bb_left {
 				this = this.rl()
+			} else {
+				this = this.ll()
 			}
 		}
-	case 4:
-		if this.parent == nil { //根节点是黑色
-			this.color = rbColor_black
-		} else {
-			this.color = rbColor_red
+
+		this.color = rbColor_black
+		if this.left != nil {
+			this.left.color = rbColor_red
 		}
 
-		this.left.color = rbColor_black
-		this.right.color = rbColor_black
-	default:
-		panic(fmt.Sprintf("invalid case:%d", case_v))
+		if this.right != nil {
+			this.right.color = rbColor_red
+		}
+	} else if brother.isRed() { //4节点 分裂
+		//直接上色
+		if this.parent == nil { //根节点
+			this.color = rbColor_black
+		}else {
+			this.color = rbColor_red //变红就相当于234树向上merge的过程
+		}
+
+		newNode.color = rbColor_black
+		brother.color = rbColor_black
+	} else { // 异常情况
+		panic(fmt.Sprintf("node:%v insert case err", brother))
 	}
 
-	value = this.value
-
 	return this
-}
-
-//todo 更好的实现
-func (this *redBlackNode) insert2(value int) {
-
 }
 
 //删除
@@ -598,7 +636,7 @@ func (this *RedBlackTree) Insert(value int) bool {
 		return false
 	}
 
-	this.root = this.root.insert(value, nil)
+	this.root = this.root.insert2(value, nil)
 	return true
 }
 
