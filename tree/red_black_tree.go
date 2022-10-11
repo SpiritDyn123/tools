@@ -1,6 +1,9 @@
 package tree
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 /*
 	红黑树
@@ -63,6 +66,10 @@ func (this *redBlackNode) isBlack() bool {
 
 func (this *redBlackNode) isRed() bool {
 	return this != nil && this.color == rbColor_red
+}
+
+func (this *redBlackNode) isLeaf() bool {
+	return this.left == nil && this.right == nil
 }
 
 func (this *redBlackNode) valueWithColor() string {
@@ -307,7 +314,7 @@ func (this *redBlackNode) insert2(value int, parent *redBlackNode) *redBlackNode
 	1 如果是红色，则直接删除，不用后续调整；
 	2 如果是黑色，则需要考虑其兄弟节点颜色，以及兄弟节点的儿子情况：
 	  - 2.1 如果兄弟节点是红色，则要满足红黑树第5点，兄弟节点必有两个黑色的儿子，则修改兄弟节点的左儿子为红色，
-		兄弟节点为黑色，对父节点左旋，调整完毕；
+		兄弟节点为黑色，对父节点左旋，修改父亲节点为红色 然后继续2.2的逻辑判断（旋转完毕，可能兄弟节点变黑了)
 	  - 2.2 如果兄弟节点是黑色（如果有儿子，则一定是红色，黑色则不满足红黑树第5点）：
 		  - 1 兄弟节点有一个右儿子：将父节点颜色给兄弟节点，修改父节点和兄弟右儿子节点为红色，对父节点左旋，调整完毕；
 		  - 2 兄弟节点有一个左儿子，互换兄弟与其左儿子节点颜色，对兄弟节点右旋，此时和 2.2.1 一样，执行即可；
@@ -316,7 +323,47 @@ func (this *redBlackNode) insert2(value int, parent *redBlackNode) *redBlackNode
 			- 4.1 父亲为红色，直接改父亲为黑色
 			- 4.2 父亲为黑色，以父亲节点替代当前节点 递归重复2的处理
 */
-func (this *redBlackNode) removeTrans(curNode *redBlackNode, del bool) (newRoot, delNode *redBlackNode) {
+//检查一下
+func(this *redBlackNode) checkLeaf(pNode *redBlackNode, case_v int) bool {
+	if this == nil {
+		return true
+	}
+
+	if this.isLeaf() {
+		if this.parent == nil {
+			return true
+		}
+
+		b_left := this == this.parent.left
+		var brother = this.parent.left
+		if b_left {
+			brother = this.parent.right
+		}
+
+		hit := brother == nil && this.isBlack() ||
+			brother != nil && brother.isLeaf() && this.color != brother.color ||
+			brother != nil && !brother.isLeaf() && !this.isBlack()
+
+		if hit {
+			fmt.Println("checkLeaf：", this, this.parent)
+			pNode.print("checkLeaf"+ strconv.Itoa(case_v), 0, "\t")
+		}
+
+		return !hit
+	}
+
+	if !this.left.checkLeaf(pNode, case_v) {
+		return false
+	}
+
+	if !this.right.checkLeaf(pNode, case_v) {
+		return false
+	}
+
+	return true
+}
+
+func (this *redBlackNode) removeTrans(curNode *redBlackNode, del bool) (newRoot, delNode *redBlackNode, case_v int) {
 	delNode = curNode
 	newRoot = this
 	parent := curNode.parent //父亲节点
@@ -325,14 +372,26 @@ func (this *redBlackNode) removeTrans(curNode *redBlackNode, del bool) (newRoot,
 		return
 	}
 
+	//测试
+	//if del && curNode.value == 617 {
+	//	fmt.Println(curNode)
+	//	curNode.parent.parent.print("BEFORE_DEL:", 0, "\t")
+	//}
+
 	if curNode.isRed() {//红色
 
 	} else if curNode.left != nil && del {//存在子节点 交换一下位置即可
+		tmp_v := curNode.value
 		curNode.value = curNode.left.value
+		curNode.left.value = tmp_v
 		curNode = curNode.left
+		case_v = 1
 	} else if curNode.right != nil && del {//存在子节点 交换一下位置即可
+		tmp_v := curNode.value
 		curNode.value = curNode.right.value
+		curNode.right.value = tmp_v
 		curNode = curNode.right
+		case_v = 2
 	} else {
 		brother := parent.right //兄弟节点
 		b_left := true
@@ -344,13 +403,18 @@ func (this *redBlackNode) removeTrans(curNode *redBlackNode, del bool) (newRoot,
 		//从父亲节点看234节点
 		if brother.isRed() { //必然存在双黑子 父亲和兄节点组成3节点(必为黑)，双黑子为2节点，参照234树，合并一个新的4节点
 			brother.color = rbColor_black
+			parent.color = rbColor_red
 			if b_left {
-				brother.left.color = rbColor_red
 				newRoot = parent.ll()
+				case_v = 3
 			} else {
-				brother.right.color = rbColor_red
 				newRoot = parent.rr()
+				case_v = 4
 			}
+
+			//判断转移后的情况，可能需要继续旋转变色
+			_, _, _ = this.removeTrans(curNode, false)
+
 		} else {
 			if brother.left != nil && brother.left.isRed() &&
 				brother.right != nil && brother.right.isRed() { //双红子 兄弟为4节点,参照234树，借一个
@@ -359,9 +423,11 @@ func (this *redBlackNode) removeTrans(curNode *redBlackNode, del bool) (newRoot,
 				if b_left {
 					brother.right.color = rbColor_black
 					newRoot = parent.ll()
+					case_v = 5
 				} else {
 					brother.left.color = rbColor_black
 					newRoot = parent.rr()
+					case_v = 6
 				}
 			} else if brother.left != nil && brother.left.isRed() { //单左 兄弟为3节点,参照234树，借一个
 				pcolor := parent.color
@@ -369,10 +435,12 @@ func (this *redBlackNode) removeTrans(curNode *redBlackNode, del bool) (newRoot,
 				if b_left {
 					brother.left.color = pcolor
 					newRoot = parent.rl()
+					case_v = 7
 				} else {
 					brother.color = pcolor
 					brother.left.color = rbColor_black
 					newRoot = parent.rr()
+					case_v = 8
 				}
 			} else if brother.right != nil && brother.right.isRed() {//单右 兄弟为3节点,参照234树，借一个
 				pcolor := parent.color
@@ -381,22 +449,38 @@ func (this *redBlackNode) removeTrans(curNode *redBlackNode, del bool) (newRoot,
 					brother.color = pcolor
 					brother.right.color = rbColor_black
 					newRoot = parent.ll()
+					case_v = 9
 				} else {
 					brother.right.color = pcolor
 					newRoot = parent.lr()
+					case_v = 10
 				}
 			} else { //不存在子节点
 				brother.color = rbColor_red
 				if parent.isRed() { //从父节点借来
 					parent.color = rbColor_black
+					case_v = 11
 				} else { //黑色相当于234树减层了，要向上递归重复上面的处理
-					newRoot, _ =  this.removeTrans(parent, false) //不接收返回值
+					case_v = 12
+					newRoot, _, _ =  this.removeTrans(parent, false) //不接收返回值
 				}
 			}
 		}
 	}
 
-	return newRoot, curNode
+	//测试
+	//if del {
+	//	curNode.color = rbColor_red
+	//
+	//	////判断一下
+	//	if !newRoot.checkLeaf(newRoot, case_v) {
+	//		fmt.Println("DEL_NODE:", curNode, del)
+	//		panic("checkLeaf error")
+	//	}
+	//}
+
+
+	return newRoot, curNode, case_v
 }
 
 func (this *redBlackNode) remove(value int) *redBlackNode {
@@ -430,8 +514,7 @@ func (this *redBlackNode) remove(value int) *redBlackNode {
 		curNode = dstNode
 	}
 
-	newRoot, delNode := this.removeTrans(curNode, true)
-	//fmt.Printf("----------%v %v %v\n", newRoot, dstNode, curNode)
+	newRoot, delNode, _ := this.removeTrans(curNode, true)
 	//删除节点
 	if delNode.parent == nil { //直接就是根节点
 		return nil
