@@ -403,6 +403,12 @@ func (this *redBlackNode) removeTrans(curNode *redBlackNode, del bool) (newRoot,
 		}
 
 		//从父亲节点看234节点
+		/*
+			1、兄弟为红色表示父兄组成3节点， 要把整个兄弟子树（一颗234节点）旋转过来，需要继续递归转换
+			2、兄弟为黑色，兄弟本身就是234树一个节点，旋转后只是相当于结了一个值过来，很好处理，
+				但是考虑到兄弟如果没有子树（2节点），就只能网上找父节点借（父为红），或者合并（父为黑），
+				合并就会导致树降低，需要继续递归转换
+		*/
 		if brother.isRed() { //必然存在双黑子 父亲和兄节点组成3节点(必为黑)，双黑子为2节点，参照234树，合并一个新的4节点
 			brother.color = rbColor_black
 			parent.color = rbColor_red
