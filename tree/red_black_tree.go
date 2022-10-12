@@ -209,6 +209,7 @@ func (this *redBlackNode) rl() *redBlackNode {
 
 	====更精简易懂的实现=======
 	！！！爷父子三层一次操作（换种理解：遇到黑色（除了最底下的父亲层）就操作）
+	图解：./img/red_blue_insert.png
  */
 func (this *redBlackNode) insert2(value int, parent *redBlackNode) *redBlackNode {
 	if this == nil {
@@ -322,6 +323,7 @@ func (this *redBlackNode) insert2(value int, parent *redBlackNode) *redBlackNode
 		  - 4 兄弟节点没有儿子，因为删除的节点为黑色，为了动态平衡，直接修改兄弟节点的颜色为红色，
 			- 4.1 父亲为红色，直接改父亲为黑色
 			- 4.2 父亲为黑色，以父亲节点替代当前节点 递归重复2的处理
+	图解：./img/red_blue_remove.xmind 需要安装xmind
 */
 //检查一下
 func(this *redBlackNode) checkLeaf(pNode *redBlackNode, case_v int) bool {
