@@ -9,7 +9,7 @@ import (
 
 //go test -v -run RedBlueTre .
 func TestRedBlueTree(t *testing.T) {
-	Num := 10000
+	Num := 3000
 	values := make([]int, Num)
 	for i := 0;i < Num;i++ {
 		values[i] = i
@@ -27,10 +27,10 @@ func TestRedBlueTree(t *testing.T) {
 	tree := &RedBlackTree{}
 	for _, v := range values {
 		tree.Insert(v)
-		if Num < 20 {
-			fmt.Println("------------insert:", v)
-			tree.Print()
-		}
+		//if Num < 20 {
+		//	fmt.Println("------------insert:", v)
+		//	tree.Print()
+		//}
 	}
 
 	tree.Print()
@@ -38,16 +38,16 @@ func TestRedBlueTree(t *testing.T) {
 
 	//values = []int{3, 7, 10, 9}
 	r_cnt := 0
-	for _, v := range values {
+	for i, v := range values {
 		if tree.Remove(v) {
 			r_cnt++
 		}
-		if Num < 20 {
+
+		if Num < 20 || i >= len(values) - 4 {
 			fmt.Println("--------------remove:", v, "----------------")
 			tree.Print()
 		}
 	}
 
-	tree.Print()
 	fmt.Println("remove count:", r_cnt)
 }

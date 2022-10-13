@@ -365,7 +365,8 @@ func(this *redBlackNode) checkLeaf(pNode *redBlackNode, case_v int) bool {
 	return true
 }
 
-func (this *redBlackNode) removeTrans(curNode *redBlackNode, del bool) (newRoot, delNode *redBlackNode, case_v int) {
+//234树删除法
+func (this *redBlackNode) removeTransAs234(curNode *redBlackNode, del bool) (newRoot, delNode *redBlackNode, oprs []string) {
 	delNode = curNode
 	newRoot = this
 	parent := curNode.parent //父亲节点
@@ -381,19 +382,19 @@ func (this *redBlackNode) removeTrans(curNode *redBlackNode, del bool) (newRoot,
 	//}
 
 	if curNode.isRed() {//红色
-
+		oprs = []string{"红色直接删除"}
 	} else if curNode.left != nil && del {//存在子节点 交换一下位置即可
 		tmp_v := curNode.value
 		curNode.value = curNode.left.value
 		curNode.left.value = tmp_v
 		curNode = curNode.left
-		case_v = 1
+		oprs = []string{"替换左节点"}
 	} else if curNode.right != nil && del {//存在子节点 交换一下位置即可
 		tmp_v := curNode.value
 		curNode.value = curNode.right.value
 		curNode.right.value = tmp_v
 		curNode = curNode.right
-		case_v = 2
+		oprs = []string{"替换右边节点"}
 	} else {
 		brother := parent.right //兄弟节点
 		b_left := true
@@ -414,15 +415,16 @@ func (this *redBlackNode) removeTrans(curNode *redBlackNode, del bool) (newRoot,
 			parent.color = rbColor_red
 			if b_left {
 				newRoot = parent.ll()
-				case_v = 3
+				oprs = []string{"兄红左旋"}
 			} else {
 				newRoot = parent.rr()
-				case_v = 4
+				oprs = []string{"兄红右旋"}
 			}
 
 			//判断转移后的情况，可能需要继续旋转变色
-			_, _, _ = this.removeTrans(curNode, false)
-
+			var c_oprs []string
+			_, _, c_oprs = this.removeTransAs234(curNode, false)
+			oprs = append(oprs, c_oprs...)
 		} else {
 			if brother.left != nil && brother.left.isRed() &&
 				brother.right != nil && brother.right.isRed() { //双红子 兄弟为4节点,参照234树，借一个
@@ -431,11 +433,11 @@ func (this *redBlackNode) removeTrans(curNode *redBlackNode, del bool) (newRoot,
 				if b_left {
 					brother.right.color = rbColor_black
 					newRoot = parent.ll()
-					case_v = 5
+					oprs = []string{"兄黑子满左旋"}
 				} else {
 					brother.left.color = rbColor_black
 					newRoot = parent.rr()
-					case_v = 6
+					oprs = []string{"兄黑子满右旋"}
 				}
 			} else if brother.left != nil && brother.left.isRed() { //单左 兄弟为3节点,参照234树，借一个
 				pcolor := parent.color
@@ -443,12 +445,12 @@ func (this *redBlackNode) removeTrans(curNode *redBlackNode, del bool) (newRoot,
 				if b_left {
 					brother.left.color = pcolor
 					newRoot = parent.rl()
-					case_v = 7
+					oprs = []string{"兄黑左子右左旋"}
 				} else {
 					brother.color = pcolor
 					brother.left.color = rbColor_black
 					newRoot = parent.rr()
-					case_v = 8
+					oprs = []string{"兄黑左子右旋"}
 				}
 			} else if brother.right != nil && brother.right.isRed() {//单右 兄弟为3节点,参照234树，借一个
 				pcolor := parent.color
@@ -457,29 +459,33 @@ func (this *redBlackNode) removeTrans(curNode *redBlackNode, del bool) (newRoot,
 					brother.color = pcolor
 					brother.right.color = rbColor_black
 					newRoot = parent.ll()
-					case_v = 9
+					oprs = []string{"兄黑右子左旋"}
 				} else {
 					brother.right.color = pcolor
 					newRoot = parent.lr()
-					case_v = 10
+					oprs = []string{"兄黑右子左右旋"}
 				}
 			} else { //不存在子节点
 				brother.color = rbColor_red
 				if parent.isRed() { //从父节点借来
 					parent.color = rbColor_black
-					case_v = 11
+					oprs = []string{"兄黑无子借父红"}
 				} else { //黑色相当于234树减层了，要向上递归重复上面的处理
-					case_v = 12
-					newRoot, _, _ =  this.removeTrans(parent, false) //不接收返回值
+					oprs = []string{"兄黑无子父黑递归"}
+					var c_oprs []string
+					newRoot, _, c_oprs =  this.removeTransAs234(parent, false) //不接收返回值
+					oprs = append(oprs, c_oprs...)
 				}
 			}
 		}
 	}
 
+	if del {
+		curNode.color = rbColor_red
+	}
+
 	//测试
 	//if del {
-	//	curNode.color = rbColor_red
-	//
 	//	////判断一下
 	//	if !newRoot.checkLeaf(newRoot, case_v) {
 	//		fmt.Println("DEL_NODE:", curNode, del)
@@ -488,7 +494,113 @@ func (this *redBlackNode) removeTrans(curNode *redBlackNode, del bool) (newRoot,
 	//}
 
 
-	return newRoot, curNode, case_v
+	return newRoot, curNode, oprs
+}
+
+//正常逻辑删除
+func (this *redBlackNode) removeTrans(curNode *redBlackNode, del bool) (newRoot, delNode *redBlackNode, oprs []string) {
+	delNode = curNode
+	parent := curNode.parent
+	if curNode == nil || parent == nil {
+		return
+	}
+
+	//一定要让curNode.color变成红色，才能删除
+	if curNode.isRed() {
+		oprs = []string{"红色直接删除"}
+	} else if del && (curNode.left != nil || curNode.right != nil) {
+		repNode := curNode.left
+		b_left := true
+		if repNode == nil  {
+			b_left = false
+			repNode = curNode.right
+		}
+
+		repNode.color = curNode.color
+		if b_left {
+			newRoot = curNode.rr()
+			oprs = []string{"替换左节点"}
+		} else {
+			newRoot = curNode.ll()
+			oprs = []string{"替换右节点"}
+		}
+
+	} else {
+		b_left := curNode == parent.left
+		brother := parent.left
+		if b_left {
+			brother = parent.right
+		}
+
+		if brother.isRed() {//兄弟节点是红色
+			brother.color, parent.color = parent.color, brother.color //交换颜色 父必为黑色
+			if b_left {
+				newRoot = parent.ll()
+				oprs = []string{"兄红左旋"}
+
+			} else {
+				newRoot = parent.rr()
+				oprs = []string{"兄红右旋"}
+			}
+
+			//转换成兄弟节点为黑色情况，继续递归
+			var c_oprs []string
+			_, _, c_oprs = this.removeTrans(curNode, false)
+			oprs = append(oprs, c_oprs...)
+		} else  { //兄弟节点是黑色
+			if brother.isLeaf() || brother.left != nil && brother.left.isBlack() && brother.right != nil && brother.right.isBlack() { //没有子节点
+				brother.color = rbColor_red
+				if parent.isRed() {
+					parent.color = rbColor_black
+					oprs = []string{"兄黑无子借父红"}
+				} else {
+					oprs = []string{"兄黑无子父黑递归"}
+					var c_oprs []string
+					newRoot, _, c_oprs = this.removeTrans(parent, false)
+					oprs = append(oprs, c_oprs...)
+				}
+			} else {
+				opr_desc := "兄黑"
+				if b_left {
+					if brother.right == nil || brother.right.isBlack() {
+						brother = brother.rr()
+						opr_desc += "左子右左旋"
+					} else {
+						opr_desc += "右子左旋"
+					}
+
+					brother.color = rbColor_black
+					brother.right.color = rbColor_black
+					newRoot = parent.ll()
+				} else {
+					if brother.left == nil || brother.left.isBlack(){
+						brother = brother.ll()
+						opr_desc += "右子左右旋"
+					}else {
+						opr_desc += "左子右旋"
+					}
+
+					brother.color = rbColor_black
+					brother.left.color = rbColor_black
+
+					newRoot = parent.rr()
+				}
+
+				oprs = []string{opr_desc}
+				//变色 newRoot == brother
+				newRoot.color, parent.color = parent.color, newRoot.color
+			}
+		}
+	}
+
+	//只有删除层才能变色
+	if del {
+		curNode.color = rbColor_red
+	}
+
+	delNode = curNode
+
+	return
 }
 
 func (this *redBlackNode) remove(value int) *redBlackNode {
@@ -522,7 +634,10 @@ func (this *redBlackNode) remove(value int) *redBlackNode {
 		curNode = dstNode
 	}
 
-	newRoot, delNode, _ := this.removeTrans(curNode, true)
+	newRoot, delNode, oprs := this.removeTrans(curNode, true)
+
+	fmt.Printf("删除%d操作：%v\n", value, oprs)
+
 	//删除节点
 	if delNode.parent == nil { //直接就是根节点
 		return nil
@@ -535,7 +650,7 @@ func (this *redBlackNode) remove(value int) *redBlackNode {
 	}
 
 	//因为涉及旋转可能会让this的root位置变化
-	if newRoot.parent == nil {
+	if newRoot != nil && newRoot.parent == nil {
 		return newRoot
 	}
 
