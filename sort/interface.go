@@ -5,6 +5,11 @@ import (
 	"reflect"
 )
 
+/*
+	常见排序
+	网站：https://www.runoob.com/w3cnote/selection-sort.html
+ */
+
 type CompareFunc func(a, b interface{}) bool
 func IntCompareFunc(a, b interface{}) bool {
 	va := a.(int)
