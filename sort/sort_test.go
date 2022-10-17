@@ -78,6 +78,26 @@ func Test_insert(t *testing.T) {
 	t.Log("test insert success")
 }
 
+//go test -v -run heap .
+func Test_heap(t *testing.T) {
+	s := &HeapSort{}
+	err := s.Sort(arr, IntCompareFunc)
+	fmt.Println(arr, err)
+
+	arr_s := []*S{}
+	for i := 0;i < len(arr);i++ {
+		arr_s = append(arr_s, &S{arr[i] })
+	}
+	err = s.Sort(arr_s, func(a, b interface{}) bool {
+		va := a.(*S)
+		vb := b.(*S)
+		return va.v > vb.v
+	})
+	fmt.Println(arr_s, err)
+
+	t.Log("test heap success")
+}
+
 //go test -v -run count .
 func Test_count(t *testing.T) {
 	s := &CountSort{}
