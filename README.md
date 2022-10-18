@@ -1,4 +1,4 @@
-# test-tools
+# tools
 - redis-cli golang基于原生tcp实现的redis-cli
 ![运行图](./redis-cli/pic/redis-cli.png)
 # spirit-chat
