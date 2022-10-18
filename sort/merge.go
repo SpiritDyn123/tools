@@ -5,7 +5,7 @@ import (
 )
 
 /*
-	归并排序
+	归并排序:分治递归
 */
 
 type MergeSort struct {
@@ -17,7 +17,8 @@ func (this *MergeSort) sort(arr reflect.Value, cf CompareFunc) {
 	if arr_l < 2 {
 		return
 	}
-	
+
+	//split
 	sp_index := arr_l / 2
 	this.sort(arr.Slice(0, sp_index), cf)
 	this.sort(arr.Slice(sp_index, arr_l), cf)
