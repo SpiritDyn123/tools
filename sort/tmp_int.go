@@ -150,9 +150,13 @@ func insertSort(data []int) {
 }
 
 //希尔排序
-func shellSort(data []int) { //宏观的insertSort
+func shellSort(data []int, seed int) { //宏观的insertSort
+	if seed <= 0 {
+		seed = 2
+	}
+
 	bLen := len(data)
-	for gap := bLen / 2;gap > 0; gap /= 2{
+	for gap := bLen / seed;gap > 0; gap /= seed{
 		//插入排序
 		for i := 0;i < gap;i++ { //组数
 			//按照gap分组执行插入排序
@@ -220,7 +224,7 @@ func main() {
 
 	shuffle(data)
 	fmt.Println("sort before:", data)
-	shellSort(data)
+	shellSort(data, 2)
 	fmt.Println("sorted:", data)
 
 
